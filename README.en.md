@@ -1,81 +1,137 @@
 # xqnode/skills
 
-Reusable **Agent Skill** for packaging portable Windows tool folders (Maven, JDK bundles, etc.) into **Inno Setup EXE** installers — with user-level env vars, silent Java detection, and optional JDK 8/21 install.
+A collection of reusable **Agent Skills**. Each skill is a top-level directory with `SKILL.md` (and optional `scripts/`, `references/`).
 
 [中文说明](./README.md)
 
-## Skill: `windows-inno-env-installer`
+## Skill catalog
+
+| Skill | Description | Typical triggers |
+|-------|-------------|------------------|
+| [`windows-inno-env-installer`](./windows-inno-env-installer/) | Portable tool folders → Inno Setup EXE, HKCU env vars, optional JDK 8/21 | package exe, Inno Setup, env var installer, one-click grad project environment |
+| [`springboot-vue-thesis-builder`](./springboot-vue-thesis-builder/) | One-sentence prompts → full Spring Boot 3.2 + Vue 3 + MySQL capstone stack | thesis, capstone, Spring Boot Vue, full-stack generator, 毕设 |
+
+List all skills:
+
+```bash
+npx skills add https://github.com/xqnode/skills --list
+```
+
+## Repository layout
+
+```
+skills/                          # repo root
+├── README.md
+├── windows-inno-env-installer/
+│   ├── SKILL.md
+│   └── scripts/
+│       ├── preflight.ps1
+│       └── install-jdk.ps1
+└── springboot-vue-thesis-builder/
+    └── SKILL.md
+```
+
+**Convention:** one top-level directory per skill; directory name matches the `name` field in `SKILL.md` frontmatter.
+
+## Quick install
+
+### Skills CLI (recommended)
+
+```bash
+# Interactive picker
+npx skills add https://github.com/xqnode/skills
+
+# Single skill
+npx skills add https://github.com/xqnode/skills --skill windows-inno-env-installer
+npx skills add https://github.com/xqnode/skills --skill springboot-vue-thesis-builder
+
+# All skills
+npx skills add https://github.com/xqnode/skills --all
+```
+
+### Cursor
+
+```bash
+git clone https://github.com/xqnode/skills.git %TEMP%\xqnode-skills
+
+xcopy /E /I %TEMP%\xqnode-skills\windows-inno-env-installer %USERPROFILE%\.cursor\skills\windows-inno-env-installer
+xcopy /E /I %TEMP%\xqnode-skills\springboot-vue-thesis-builder %USERPROFILE%\.cursor\skills\springboot-vue-thesis-builder
+```
+
+### Other clients
+
+| Client | Install |
+|--------|---------|
+| **Codex** | Clone repo to `~/.codex/skills/` |
+| **Cline** | Copy skill dir to `~/.cline/skills/` |
+| **Claude Code** | Copy `SKILL.md` → `.claude/commands/<skill-name>.md` |
+| **Cursor command** | Copy `SKILL.md` → `.cursor/commands/<skill-name>.md` |
+
+---
+
+## Skill details
+
+### `windows-inno-env-installer`
+
+Packages portable Windows tool folders (Maven, JDK bundles, etc.) into **Inno Setup EXE** installers — user-level env vars, silent Java detection, optional JDK 8/21 install.
 
 | Item | Description |
 |------|-------------|
 | **Goal** | One-shot build: preflight → compile → `dist/*-Setup.exe` |
 | **Installer** | Inno Setup 6, `PrivilegesRequired=lowest` |
 | **Env vars** | `MAVEN_HOME` / `JAVA_HOME` + user `Path` via **HKCU** (no admin) |
-| **Java** | Skip JDK UI when `java -version` works; otherwise offer JDK 21 (default) / 8 / skip |
 | **Bundled scripts** | `scripts/preflight.ps1`, `scripts/install-jdk.ps1` |
 
-Typical triggers for the agent: *package exe*, *Inno Setup*, *env var installer*, *one-click grad project environment*, *毕设环境一键安装*.
+Your project still needs its own `installer/*.iss` and `build-installer.bat`; this repo ships the **skill + scripts** (see [SKILL.md](./windows-inno-env-installer/SKILL.md)).
 
-### Repository layout
+**Use in a project:**
 
-```
-windows-inno-env-installer/
-├── SKILL.md                 # Agent workflow & ISS pitfalls checklist
-└── scripts/
-    ├── preflight.ps1        # Pre-compile checks (Inno, jars, language file)
-    └── install-jdk.ps1      # Adoptium download + JAVA_HOME/Path (template)
-```
-
-Your project still needs its own `installer/*.iss` and `build-installer.bat`; this repo ships the **skill + scripts**, not a full Maven installer project.
-
-## Quick start
-
-### Install the skill
-
-```bash
-npx skills add https://github.com/xqnode/skills --skill windows-inno-env-installer
-```
-
-**Cursor** (recommended):
-
-```bash
-git clone https://github.com/xqnode/skills.git %TEMP%\xqnode-skills
-xcopy /E /I %TEMP%\xqnode-skills\windows-inno-env-installer %USERPROFILE%\.cursor\skills\windows-inno-env-installer
-```
-
-**Codex**:
-
-```bash
-git clone https://github.com/xqnode/skills.git ~/.codex/skills
-```
-
-### Use in a project
-
-1. Copy `windows-inno-env-installer/scripts/` into your `installer/scripts/`.
-2. Add `installer/app-installer.iss` following rules in `SKILL.md` (wizard order, HKCU env, no `PrepareToInstall` jar checks, etc.).
-3. Run preflight, then compile:
+1. Copy `scripts/` into `installer/scripts/`.
+2. Add `installer/app-installer.iss` following rules in `SKILL.md`.
+3. Preflight, then compile:
 
 ```bat
 powershell -File installer\scripts\preflight.ps1 -ProjectRoot .
 build-installer.bat
 ```
 
-## Prerequisites
+**Prerequisites:** Inno Setup 6, complete portable source tree, optional `ChineseSimplified.isl`.
 
-- [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`ISCC.exe`)
-- Complete portable source tree (e.g. Maven `lib\*.jar`, not only `.license` files)
-- Optional: `ChineseSimplified.isl` for Simplified Chinese UI
+---
 
-## Other clients
+### `springboot-vue-thesis-builder`
 
-| Client | Install |
-|--------|---------|
-| **Skills CLI** | `npx skills add https://github.com/xqnode/skills --skill windows-inno-env-installer` |
-| **Cline** | Copy `windows-inno-env-installer/` to `~/.cline/skills/` |
-| **Claude Code** | Copy `SKILL.md` → `.claude/commands/windows-inno-env-installer.md` |
-| **Cursor command** | Copy `SKILL.md` → `.cursor/commands/windows-inno-env-installer.md` |
+Generates a full capstone project from a **one-sentence business prompt**: Spring Boot 3.2 + Vue 3 + MySQL, session auth, AdminLayout / FrontLayout, unified `Result` / `PageResult` API, single `sql/base.sql`.
 
-List skills: `npx skills add https://github.com/xqnode/skills --list`
+| Item | Description |
+|------|-------------|
+| **Workflow** | W0 scaffold → W1 schema → W2 backend → W3/W4 UI → W5 dashboard → W6 docs → W7 verify |
+| **Stack** | Java 21, Boot 3.2, MyBatis-Plus, HttpSession, Vue 3 + Vite + Pinia + Element Plus |
+| **Usage** | Paste full [SKILL.md](./springboot-vue-thesis-builder/SKILL.md) into system / rules / `CLAUDE.md` / `AGENTS.md`; user message is business requirements only |
+| **Autonomy** | Runs W0–W7 without waiting for confirmation unless user says otherwise |
+
+**Example prompt:**
+
+> Build a campus second-hand book marketplace: users list and order books; admins manage categories and orders.
+
+**Verify:**
+
+```bash
+cd springboot && mvn -q -DskipTests compile
+cd vue && npm install && npm run build
+```
+
+---
+
+## Adding a new skill
+
+1. Create `<skill-name>/` at repo root (lowercase, hyphens; same as frontmatter `name`).
+2. Add `SKILL.md` with YAML frontmatter (`name`, `description`) and instructions.
+3. Optionally add `scripts/`, `references/`, `examples.md`.
+4. Update the catalog table and skill details in this README.
+5. Verify locally: `npx skills add . --list` should discover the new skill.
+
+Write `description` so agents know **what** the skill does and **when** to use it.
 
 ## License
 
